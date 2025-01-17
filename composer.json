@@ -1,13 +1,15 @@
 {
-    "name": "maithya/africans-talking-otp-system",
-    "description": "A simple and efficient One-Time Password (OTP) system built using Africa's Talking API. This repository provides a streamlined solution for generating, sending, and verifying OTPs, making it ideal for secure user authentication in applications.",
-    "type": "project",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "maithya",
-            "email": "bonn.dev254@gmail.com"
-        }
-    ],
-    "require": {}
+  "name": "maithya/africans-talking-otp-system",
+  "description": "A simple and efficient One-Time Password (OTP) system built using Africa's Talking API. This repository provides a streamlined solution for generating, sending, and verifying OTPs, making it ideal for secure user authentication in applications.",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "maithya",
+      "email": "bonn.dev254@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1"
+  }
 }
