@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta24/dist/js/tabler.min.js"></script>
 </head>
 
-<body style="background-color:#FBF5DD;">
+<body>
     <div class="page page-center">
         <div class="container container-tight py-4">
             <div class="card">
