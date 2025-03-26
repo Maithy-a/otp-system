@@ -26,7 +26,6 @@ session_start();
 $username = $_ENV['AFRICASTALKING_USERNAME'];
 $apiKey = $_ENV['AFRICASTALKING_API_KEY'];
 
-// Log credentials status (don't log actual values)
 error_log("Username exists: " . (!empty($username) ? 'yes' : 'no'));
 error_log("API Key exists: " . (!empty($apiKey) ? 'yes' : 'no'));
 
