@@ -102,38 +102,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request OTP</title>
+    <meta name="description" content="Secure OTP Verification System">
+    <meta name="keywords" content="OTP, verification, security, authentication">
+    <title>OTP Verification System</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta24/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="style.css">
+   
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta24/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
+
 </head>
 
 <body>
-    <div class="page page-center">
-        <div class="container container-tight py-4">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Phone Verification</h3>
-                </div>
-                <div class="card-body">
-                    <form action="" method="POST">
-                        <div class="mb-3">
-                            <label class="form-label" for="phone">Phone Number</label>
-                            <input class="form-control form-control-md" type="tel" id="phone" name="phone"
-                                pattern="^\+254\d{9}$" placeholder="Enter your phone number" required>
-                            <div class="form-text text-muted">
-                                Format: +254XXXXXXXXX
-                            </div>
-                        </div>
-                        <div class="form-footer">
-                            <button class="btn btn-primary w-100" type="submit">
-                                Request otp
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    <div class="verification-container">
+        <div class="verification-card">
+            <svg class="verification-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <h1 class="verification-title">Phone Verification</h1>
+            <p class="verification-subtitle">Enter your phone number to receive a verification code</p>
+            
+            <form action="" method="POST" id="otp-form">
+                <input class="phone-input" type="tel" id="phone" name="phone"
+                    pattern="^\+254\d{9}$" placeholder="+254700000000" required>
+                
+                <button class="verify-button" type="submit" id="send-otp-btn">
+                    Send Verification Code
+                </button>
+            </form>
         </div>
     </div>
+<script src="main.js"></script>
 </body>
 
 </html>
