@@ -1,17 +1,16 @@
 // Toast configuration
 const toastConfig = {
-    timeout: 3000,
+    timeout: 4500,
     resetOnHover: true,
-    transitionIn: "flipInX",
-    transitionOut: "flipOutX",
     position: "topRight",
     progressBar: true,
     close: true,
+    transitionIn: "bounceInDown",
     closeOnEscape: true,
     closeOnClick: true,
     displayMode: "replace",
-    layout: 2,
-    balloon: true,
+    layout: 1,
+    balloon: false,
     theme: "light"
 };
 
@@ -22,105 +21,171 @@ const showLoadingToast = (title, message) => {
     return iziToast.show({
         title,
         message,
-        icon: "fa fa-spinner fa-spin",
-        timeout: false,
-        close: false,
+        icon: "fas fa-spinner fa-spin",
+        color: 'yellow',
         position: "topRight",
         progressBar: true
     });
 };
 
-const handleApiError = (errorMessage = "An error occurred. Please try again.") => {
+const handleApiError = (message = "An error occurred. Please try again.") => {
     iziToast.error({
         title: "Error",
-        message: errorMessage,
+        message,
         position: "topRight"
     });
 };
 
 // Validation functions
 const validatePhoneNumber = (phone) => /^\+254\d{9}$/.test(phone);
-const validateOTP = (otp) => otp.length === 4;
+const validateOTP = (otp) => /^\d{4}$/.test(otp);
 
 // Phone input handling
 const phoneInput = document.getElementById("phone");
 if (phoneInput) {
     phoneInput.addEventListener("input", function(e) {
-        const value = e.target.value;
-        const isValid = /^\+254\d{0,9}$/.test(value);
-        
-        phoneInput.classList.toggle("is-valid", isValid && value.length > 0);
-        phoneInput.classList.toggle("is-invalid", !isValid && value.length > 0);
+        let value = e.target.value;
+        if (!value.startsWith("+254")) {
+            value = "+254" + value.replace(/^\+254/, "");
+        }
+        const prefix = value.substring(0, 4);
+        const numbers = value.substring(4).replace(/\D/g, "");
+        value = prefix + numbers;
+        if (numbers.length > 9) {
+            value = prefix + numbers.substring(0, 9);
+        }
+        e.target.value = value;
+        const isValid = validatePhoneNumber(value);
+        phoneInput.classList.toggle("is-valid", isValid);
+        phoneInput.classList.toggle("is-invalid", !isValid && value.length > 4);
     });
 
     phoneInput.addEventListener("paste", function(e) {
         e.preventDefault();
         const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
-        
-        if (pastedData.length === 12) {
-            phoneInput.value = `+${pastedData}`;
-        } else if (pastedData.length === 9) {
-            phoneInput.value = `+254${pastedData}`;
+        let formattedNumber = "+254";
+        if (pastedData.startsWith("254")) {
+            formattedNumber += pastedData.substring(3, 12);
+        } else if (pastedData.startsWith("0")) {
+            formattedNumber += pastedData.substring(1, 10);
         } else {
-            handleApiError("Invalid phone number format");
+            formattedNumber += pastedData.substring(0, 9);
         }
+        phoneInput.value = formattedNumber;
+        const isValid = validatePhoneNumber(formattedNumber);
+        phoneInput.classList.toggle("is-valid", isValid);
+        phoneInput.classList.toggle("is-invalid", !isValid);
     });
 }
 
-// Form submission handling
+// Form submission
 const otpForm = document.getElementById("otp-form");
 if (otpForm) {
-    otpForm.addEventListener("submit", function(e) {
+    otpForm.addEventListener("submit", async function(e) {
         e.preventDefault();
         const phone = document.getElementById("phone")?.value;
         const otp = document.getElementById("otp")?.value;
+        const csrfToken = document.querySelector("input[name=csrf_token]")?.value;
 
-        if (phone && !validatePhoneNumber(phone)) {
-            handleApiError("Please enter a valid Kenyan phone number (+254XXXXXXXXX)");
+        if (!csrfToken) {
+            handleApiError("Security error. Please refresh the page.");
+            console.error("CSRF token missing");
             return;
         }
 
-        if (otp && !validateOTP(otp)) {
-            handleApiError("Please enter a complete 4-digit verification code");
-            return;
-        }
-
-        const endpoint = phone ? "send_otp.php" : "verify_otp.php";
-        const body = phone ? `phone=${encodeURIComponent(phone)}` : `otp=${otp}`;
-        const loadingTitle = phone ? "Sending OTP" : "Verifying OTP";
-        
-        const loadingToast = showLoadingToast(loadingTitle, "Please wait...");
-
-        fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body
-        })
-        .then(response => response.json())
-        .then(data => {
-            iziToast.destroy();
-            if (data.success) {
-                iziToast.success({
-                    title: phone ? "OTP Sent" : "Verified",
-                    message: phone ? "OTP sent to your phone." : "Success! Phone number verified.",
-                    position: "topRight"
-                });
-                
-                setTimeout(() => {
-                    window.location.href = phone ? "verify_otp.php" : "welcome.php";
-                }, phone ? 0 : 2000);
-            } else {
-                handleApiError(data.message || (phone ? "Failed to send OTP" : "Invalid code"));
-                if (!phone) {
-                    document.getElementById("otp").value = "";
-                    document.getElementById("otp").focus();
-                }
+        if (phone) {
+            if (!validatePhoneNumber(phone)) {
+                handleApiError("Please enter a valid Kenyan phone number (+254XXXXXXXXX)");
+                return;
             }
-        })
-        .catch(() => {
-            iziToast.destroy();
-            handleApiError();
-        });
+            const loadingToast = showLoadingToast("Sending OTP", "Please wait...");
+            try {
+                const response = await fetch("send_otp.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `phone=${encodeURIComponent(phone)}&csrf_token=${encodeURIComponent(csrfToken)}`
+                });
+                const data = await response.json();
+                iziToast.destroy();
+                if (data.success) {
+                    iziToast.success({
+                        title: "OTP Sent",
+                        message: "OTP sent to your phone.",
+                        position: "topRight"
+                    });
+                    setTimeout(() => {
+                        window.location.href = data.redirect || "verify_otp.php";
+                        console.log("Redirecting to verify_otp.php");
+                    }, 1000);
+                } else {
+                    handleApiError(data.message || "Failed to send OTP");
+                    console.error("OTP send failed:", data.message);
+                }
+            } catch (error) {
+                iziToast.destroy();
+                handleApiError(error.message.includes("Failed to fetch") ? "Network error. Please check your connection." : "An unexpected error occurred.");
+                console.error("Fetch error:", error);
+            }
+        } else if (otp) {
+            if (!validateOTP(otp)) {
+                handleApiError("Please enter a valid 4-digit verification code");
+                return;
+            }
+            const loadingToast = showLoadingToast("Verifying OTP", "Please wait...");
+            try {
+                const response = await fetch("verify_otp.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `otp=${encodeURIComponent(otp)}&csrf_token=${encodeURIComponent(csrfToken)}`
+                });
+                const data = await response.json();
+                iziToast.destroy();
+                if (data.success) {
+                    iziToast.success({
+                        title: "Verified",
+                        message: "Success! Phone number verified.",
+                        position: "topRight"
+                    });
+                    setTimeout(() => {
+                        window.location.href = "welcome.php";
+                        console.log("Redirecting to welcome.php");
+                    }, 2000);
+                } else {
+                    if (data.expired) {
+                        handleApiError(data.message);
+                        // Enable resend button
+                        const resendButton = document.getElementById("resend-otp");
+                        if (resendButton) {
+                            resendButton.disabled = false;
+                            resendButton.style.display = "inline-block";
+                        }
+                    } else if (data.maxAttemptsReached) {
+                        handleApiError(data.message);
+                        // Disable the form and show a message
+                        const otpForm = document.getElementById("otp-form");
+                        const otpInput = document.getElementById("otp");
+                        const verifyButton = otpForm.querySelector("button[type='submit']");
+                        otpInput.disabled = true;
+                        verifyButton.disabled = true;
+                        verifyButton.textContent = "Too Many Attempts";
+                        // Show resend button
+                        const resendButton = document.getElementById("resend-otp");
+                        if (resendButton) {
+                            resendButton.style.display = "inline-block";
+                        }
+                    } else {
+                        handleApiError(data.message || "Invalid code");
+                        document.getElementById("otp").value = "";
+                        document.getElementById("otp").focus();
+                    }
+                    console.error("OTP verification failed:", data.message);
+                }
+            } catch (error) {
+                iziToast.destroy();
+                handleApiError(error.message.includes("Failed to fetch") ? "Network error. Please check your connection." : "An unexpected error occurred.");
+                console.error("Fetch error:", error);
+            }
+        }
     });
 }
 
@@ -130,30 +195,45 @@ if (resendButton) {
     let canResend = true;
     let resendTimer = null;
 
-    resendButton.addEventListener("click", function(e) {
+    // Check for persisted cooldown
+    const cooldownEnd = localStorage.getItem("resendCooldown");
+    if (cooldownEnd && Date.now() < cooldownEnd) {
+        canResend = false;
+        resendButton.disabled = true;
+        const timeLeft = Math.ceil((cooldownEnd - Date.now()) / 1000);
+        startResendCooldown(timeLeft);
+    }
+
+    resendButton.addEventListener("click", async function(e) {
         e.preventDefault();
         if (!canResend) return;
 
-        const loadingToast = showLoadingToast("Resending OTP", "Resending code...");
-
-        // Get phone from the welcome message or input
-        const welcomeText = document.querySelector(".welcome-section h2")?.textContent;
-        const phone = welcomeText ? welcomeText.match(/Welcome, (.*?)!/)?.[1] : 
-                    document.getElementById("phone")?.value;
+        const phoneElement = document.querySelector(".phone-number");
+        const phone = phoneElement?.textContent;
+        const csrfToken = document.querySelector("input[name=csrf_token]")?.value;
 
         if (!phone) {
             iziToast.destroy();
             handleApiError("Unable to find your phone number. Please try again.");
+            console.error("Phone number not found for resend");
             return;
         }
 
-        fetch("send_otp.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `phone=${encodeURIComponent(phone)}`
-        })
-        .then(response => response.json())
-        .then(data => {
+        if (!csrfToken) {
+            iziToast.destroy();
+            handleApiError("Security error. Please refresh the page.");
+            console.error("CSRF token missing for resend");
+            return;
+        }
+
+        const loadingToast = showLoadingToast("Resending OTP", "Resending code...");
+        try {
+            const response = await fetch("send_otp.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `phone=${encodeURIComponent(phone)}&csrf_token=${encodeURIComponent(csrfToken)}`
+            });
+            const data = await response.json();
             iziToast.destroy();
             if (data.success) {
                 iziToast.success({
@@ -162,20 +242,22 @@ if (resendButton) {
                     position: "topRight"
                 });
                 startResendCooldown();
+                console.log("OTP resent successfully to", phone);
             } else {
                 handleApiError(data.message || "Failed to resend OTP");
+                console.error("Resend failed:", data.message);
             }
-        })
-        .catch(() => {
+        } catch (error) {
             iziToast.destroy();
-            handleApiError();
-        });
+            handleApiError(error.message.includes("Failed to fetch") ? "Network error. Please try again." : "An unexpected error occurred.");
+            console.error("Resend fetch error:", error);
+        }
     });
 
-    function startResendCooldown() {
+    function startResendCooldown(timeLeft = 60) {
         canResend = false;
         resendButton.disabled = true;
-        let timeLeft = 60;
+        localStorage.setItem("resendCooldown", Date.now() + timeLeft * 1000);
 
         resendTimer = setInterval(() => {
             resendButton.textContent = `Resend Code (${--timeLeft}s)`;
@@ -184,6 +266,7 @@ if (resendButton) {
                 canResend = true;
                 resendButton.textContent = "Resend Code";
                 resendButton.disabled = false;
+                localStorage.removeItem("resendCooldown");
             }
         }, 1000);
     }

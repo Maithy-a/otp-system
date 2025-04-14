@@ -1,114 +1,67 @@
 <?php
+ob_start();
 session_start();
+session_regenerate_id(true);
+
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 if (!isset($_SESSION['phone'])) {
+    error_log("No phone session in welcome.php");
     header('Location: index.php');
-    exit();
+    exit;
 }
+
+// Session timeout
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+    session_unset();
+    session_destroy();
+    header('Location: index.php');
+    exit;
+}
+$_SESSION['last_activity'] = time();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome - OTP System</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <style>
-        .welcome-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-
-        .welcome-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-
-        .welcome-icon {
-            font-size: 4rem;
-            color: #4f46e5;
-            margin-bottom: 1.5rem;
-        }
-
-        .welcome-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #1f2937;
-        }
-
-        .welcome-message {
-            color: #6b7280;
-            margin-bottom: 2rem;
-        }
-
-        .welcome-phone {
-            background: #f3f4f6;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            display: inline-block;
-            margin-bottom: 2rem;
-            color: #4f46e5;
-            font-weight: 500;
-        }
-
-        .welcome-button {
-            background: #4f46e5;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .welcome-button:hover {
-            background: #4338ca;
-            transform: translateY(-2px);
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 </head>
-
 <body>
     <div class="welcome-container">
         <div class="welcome-card">
-            <div class="welcome-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
+            <i class="fas fa-check-circle welcome-icon"></i>
             <h1 class="welcome-title">Welcome!</h1>
             <p class="welcome-message">Your phone number has been successfully verified.</p>
             <div class="welcome-phone">
-                <?php echo htmlspecialchars($_SESSION['phone']); ?>
+                <?php echo htmlspecialchars($_SESSION['phone'], ENT_QUOTES, 'UTF-8'); ?>
             </div>
-            <div>
-                <button onclick="logout()" class="welcome-button">Logout</button>
-            </div>
+            <button onclick="logout()" class="welcome-button" aria-label="Logout">Logout</button>
         </div>
     </div>
     <script>
-
-        document.addEventListener('DOMContentLoaded', () => {
-            iziToast.success({
-                title: 'Success!',
-                message: 'Verified successfully.',
-                position: 'topRight'
-            });
+        iziToast.success({
+            title: 'Success!',
+            message: 'Verified successfully.',
+            position: 'topRight'
         });
 
         function logout() {
             fetch('logout.php', { method: 'POST' })
-                .then(() => {
-                    window.location.href = 'index.php';
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = 'index.php';
+                    } else {
+                        throw new Error('Logout failed');
+                    }
                 })
                 .catch(error => {
                     console.error('Logout failed:', error);
@@ -121,5 +74,4 @@ if (!isset($_SESSION['phone'])) {
         }
     </script>
 </body>
-
 </html>
