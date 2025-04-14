@@ -1,4 +1,5 @@
 # Africas-talking-otp-system
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
 A simple and efficient One-Time Password (OTP) system built using Africa's Talking API. This provides a streamlined solution for generating, sending, and verifying OTPs, making it ideal for secure user authentication in applications.
 
